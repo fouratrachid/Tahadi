@@ -1,65 +1,82 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Tahadi visual theme: dark, energetic game-show aesthetic.
+ * Deep navy background, electric-green primary accent, amber secondary,
+ * high contrast. Player colors distinguish the two contestants.
  */
 
-import '@/global.css';
-
-import { Platform } from 'react-native';
-
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+  bg: '#080B1F',
+  bgGradientEnd: '#0E1636',
+  surface: '#141A3A',
+  surfaceAlt: '#1C2450',
+  surfaceHi: '#28316B',
+  border: '#2B3566',
+
+  text: '#FFFFFF',
+  textSecondary: '#9AA3CC',
+  textMuted: '#5E679A',
+
+  accent: '#00E676', // electric green (primary)
+  accentDark: '#00B85C',
+  amber: '#FFB300', // secondary highlight
+  amberDark: '#C98A00',
+
+  success: '#00E676',
+  danger: '#FF3B5C',
+  warn: '#FFD400',
+
+  // Timer color stops: green -> yellow -> red
+  timerGreen: '#00E676',
+  timerYellow: '#FFD400',
+  timerRed: '#FF3B5C',
+
+  // Player identity colors
+  player1: '#22D3EE', // cyan
+  player2: '#FB7185', // rose
+
+  overlay: 'rgba(8,11,31,0.86)',
+  transparent: 'transparent',
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
-
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
+export const Fonts = {
+  regular: 'Cairo_400Regular',
+  medium: 'Cairo_600SemiBold',
+  bold: 'Cairo_700Bold',
+  black: 'Cairo_900Black',
+} as const;
 
 export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+  xxxl: 48,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export const Radius = {
+  sm: 8,
+  md: 14,
+  lg: 20,
+  xl: 28,
+  pill: 999,
+} as const;
+
+export const FontSize = {
+  xs: 12,
+  sm: 14,
+  md: 16,
+  lg: 20,
+  xl: 26,
+  xxl: 34,
+  huge: 48,
+  display: 64,
+} as const;
+
+/** Minimum touch target height for in-game controls (spec: >= 56px). */
+export const TOUCH_MIN = 56;
+
+export function playerColor(index: 0 | 1): string {
+  return index === 0 ? Colors.player1 : Colors.player2;
+}
