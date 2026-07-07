@@ -77,4 +77,24 @@ describe('selectQuestions', () => {
     expect(selectQuestions([], 5, new Set()).selected).toHaveLength(0);
     expect(selectQuestions(makePool(5), 0, new Set()).selected).toHaveLength(0);
   });
+
+  it('never selects hard-excluded ids, even when exhausted', () => {
+    const pool = makePool(20);
+    const hard = new Set(pool.slice(0, 10).map((q) => q.id));
+    const soft = new Set(pool.slice(10, 18).map((q) => q.id)); // 2 fresh left
+    const { selected, exhausted } = selectQuestions(pool, 10, soft, seededRng(5), hard);
+    expect(exhausted).toBe(true);
+    expect(selected).toHaveLength(10); // 2 fresh + 8 reused soft
+    for (const q of selected) expect(hard.has(q.id)).toBe(false);
+    expect(new Set(selected.map((q) => q.id)).size).toBe(10);
+  });
+
+  it('prefers fresh questions before reusing soft-used ones', () => {
+    const pool = makePool(12);
+    const soft = new Set(pool.slice(0, 9).map((q) => q.id)); // 3 fresh
+    const { selected, exhausted } = selectQuestions(pool, 5, soft, seededRng(6));
+    expect(exhausted).toBe(true);
+    const freshPicked = selected.filter((q) => !soft.has(q.id));
+    expect(freshPicked).toHaveLength(3); // every fresh question is included
+  });
 });

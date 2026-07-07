@@ -8,6 +8,7 @@ import {
 import type { GameConfig } from '@/types';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 jest.mock('@/lib/soundManager', () => ({
@@ -36,6 +37,7 @@ function store() {
 
 beforeEach(() => {
   store().reset();
+  store().resetUsed(); // isolate tests from each other's persisted used-ids
 });
 
 describe('configureGame validation', () => {
@@ -237,16 +239,77 @@ describe('full game, endGame and rematch', () => {
   });
 
   it('rematch keeps config, resets scores, and draws fresh questions', () => {
-    playFullGame();
+    // Two categories give the speed pool >120 questions, so a rematch can be
+    // strictly repeat-free (single min-size packs fall back to reuse-oldest).
+    store().configureGame({ ...CONFIG, categories: ['football', 'anime'] });
+    for (let round = 0; round < 4; round++) {
+      store().startRound();
+      const challenge = selectChallenge(store())!;
+      if (challenge === 'speed' || challenge === 'reversed') {
+        store().endTurn();
+        store().startTurn(1);
+        store().endTurn();
+      } else {
+        const total = selectProgress(store()).total;
+        for (let i = 0; i < total; i++) {
+          if (challenge === 'bell') store().awardBell(0);
+          else store().answerCorrect();
+        }
+      }
+      store().nextRound();
+    }
+    expect(store().phase).toBe('finished');
     const firstGameIds = new Set(store().sessionUsed);
+    expect(firstGameIds.size).toBeGreaterThan(0);
     store().rematch();
     const s = store();
     expect(s.phase).toBe('roundIntro');
     expect(s.scores).toEqual([0, 0]);
     expect(s.config?.players).toEqual(CONFIG.players);
     // Fresh questions: round-1 speed pools must not reuse first-game ids.
-    for (const q of s.timedTurns?.[0] ?? []) {
+    for (const q of [...(s.timedTurns?.[0] ?? []), ...(s.timedTurns?.[1] ?? [])]) {
       expect(firstGameIds.has(q.id)).toBe(false);
+    }
+  });
+
+  it('never repeats a question within one game even when packs are exhausted', () => {
+    // Play three consecutive games on a single category to exhaust the packs,
+    // then verify within-game uniqueness still holds.
+    for (let game = 0; game < 3; game++) {
+      if (game === 0) store().configureGame(CONFIG);
+      else store().rematch();
+      const seen = new Set<string>();
+      for (let round = 0; round < 4; round++) {
+        store().startRound();
+        const challenge = selectChallenge(store())!;
+        const collect = (): void => {
+          const q = selectCurrentQuestion(store());
+          if (q) {
+            expect(seen.has(q.id)).toBe(false);
+            seen.add(q.id);
+          }
+        };
+        if (challenge === 'speed' || challenge === 'reversed') {
+          for (const turn of store().timedTurns ?? []) {
+            for (const q of turn) {
+              expect(seen.has(q.id)).toBe(false);
+              seen.add(q.id);
+            }
+          }
+          store().endTurn();
+          store().startTurn(1);
+          store().endTurn();
+        } else {
+          const total = selectProgress(store()).total;
+          for (let i = 0; i < total; i++) {
+            collect();
+            if (challenge === 'bell') store().awardBell(0);
+            else store().skipQuestion();
+          }
+        }
+        store().nextRound();
+      }
+      expect(store().phase).toBe('finished');
     }
   });
 

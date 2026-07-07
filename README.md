@@ -1,56 +1,80 @@
-# Welcome to your Expo app 👋
+# تحدّي (Tahadi) — Offline Arabic Party Trivia
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An offline, referee-based Arabic party trivia game for **3 players**: two contestants and one referee who holds the phone, reads the questions aloud, and judges the answers. No accounts, no ads, no network — everything is bundled and free.
 
-## Get started
+## How a game works
 
-1. Install dependencies
+1. The referee enters both player names, picks 1–3 categories, exactly 4 challenge types (played in the chosen order), and a timer duration (15/30/45/60s).
+2. Each of the 4 rounds runs one challenge type:
 
-   ```bash
-   npm install
-   ```
+| Challenge | Arabic name | Scoring |
+|---|---|---|
+| Speed | تحدّي السرعة | Rapid-fire, ✓ = +10, timed turn per player |
+| Who Am I | من أنا | 4 progressive hints: guess on hint 1/2/3/4 = 40/30/20/10 pts |
+| Reversed | الكلمات المعكوسة | Word shown reversed (grapheme-safe), +15 each, timed |
+| Ordering | الترتيب | Order 4–5 items, referee judges after reveal, +20 |
+| Bell | الجرس | Head-to-head, first correct answer +10, 8 questions |
 
-2. Start the app
+3. Animated score summary between rounds, winner celebration with confetti at the end, with **rematch** (same config, fresh questions) and **new game**.
 
-   ```bash
-   npx expo start
-   ```
+Questions never repeat within a game; used questions are also persisted across app launches per pack and reset automatically when a pack is exhausted.
 
-In the output, you'll find options to open the app in a
+## Content
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+100% original Arabic (MSA) questions bundled as JSON in `assets/packs/{category}.{challengeType}.json`:
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Categories:** كرة القدم (deepest), أنمي, أفلام, منوعات عامة
+- ~700 questions total; per category: 60+ speed, 15+ whoAmI, 40+ reversed, 15+ ordering, 40+ bell
+- Difficulty mix ≈ 40% easy / 40% medium / 20% hard
 
-## Get a fresh project
+Sound effects are original synthesized tones (no third-party audio); regenerate with `npm run generate-sounds`.
 
-When you're ready, run:
+## Tech
 
-```bash
-npm run reset-project
+- Expo SDK 57 + TypeScript (strict), expo-router, Zustand (strict state machine), react-native-reanimated, expo-audio, expo-haptics, expo-keep-awake (play screen only), AsyncStorage
+- Full RTL: forced natively via the `expo-localization` config plugin (`forcesRTL`) plus `I18nManager.forceRTL` at startup; all UI strings live in `src/i18n/ar.ts`; Cairo font
+- The countdown is timestamp-based (`Date.now()` deltas driven by `requestAnimationFrame`) — no `setInterval` drift; pause/resume and backgrounding restore the exact remaining time
+- The reversed-word challenge reverses by **grapheme cluster** (`Intl.Segmenter` with a manual fallback), so Arabic combining marks and لا sequences survive intact
+
+### Project layout
+
+```
+src/
+  app/            expo-router screens (home, setup, game/*, packs, history, settings)
+  components/     ui kit + game components (timer ring, score header, confetti)
+  store/          gameStore (state machine) + settingsStore
+  lib/            questionSelector, scoring, grapheme, packs, storage, sound, haptics
+  i18n/ar.ts      every user-facing string
+assets/packs/     20 bundled question packs (JSON)
+assets/sounds/    6 synthesized WAV effects
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Run it
 
-### Other setup steps
+```bash
+npm install
+npm start          # Expo dev server — press "a" for Android
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Quality gates:
 
-## Learn more
+```bash
+npm run typecheck  # tsc --noEmit (zero errors)
+npm run lint       # expo lint (zero errors)
+npm test           # 43 unit tests: selector, scoring, graphemes, packs, state machine
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Build an APK (EAS)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm install -g eas-cli
+eas login
+eas build --platform android --profile preview   # produces an installable .apk
+```
 
-## Join the community
+The `production` profile builds an `.aab` for Play Store submission. iOS builds work from the same codebase (`eas build --platform ios`).
 
-Join our community of developers creating universal apps.
+## Notes
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- The app icon/splash are Expo template placeholders — swap `assets/images/*` before publishing.
+- Android applies forced RTL from the first install thanks to the config plugin; in Expo Go the very first launch may need one reload for RTL to apply.

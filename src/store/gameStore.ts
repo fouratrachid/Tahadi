@@ -123,31 +123,40 @@ function buildRound(
   const challenge = challengeOf(config, roundIndex);
   const pool = getPool(config.categories, challenge);
 
+  // Hard exclusion: never repeat a question within the current game.
   const sessionUsed = new Set(state.sessionUsed);
   const usedIds: UsedIdsByPack = { ...state.usedIds };
 
-  // Excluded = session-used ∪ persisted-used for the packs in play.
-  const excluded = new Set(sessionUsed);
+  // Soft exclusion: ids used in previous games (persisted per pack).
+  const softUsed = new Set<string>();
   for (const category of config.categories) {
-    for (const id of usedIds[packKey(category, challenge)] ?? []) excluded.add(id);
+    for (const id of usedIds[packKey(category, challenge)] ?? []) softUsed.add(id);
   }
 
   const markUsed = (questions: Question[]): void => {
     for (const q of questions) {
       sessionUsed.add(q.id);
-      excluded.add(q.id);
       const key = packKey(q.category, q.challengeType);
       usedIds[key] = [...(usedIds[key] ?? []), q.id];
     }
   };
 
   const draw = (count: number): Question[] => {
-    const { selected, exhausted } = selectQuestions(pool, count, excluded);
+    const { selected, exhausted } = selectQuestions(
+      pool,
+      count,
+      softUsed,
+      Math.random,
+      sessionUsed,
+    );
     if (exhausted) {
-      // Pack exhausted: reset its persisted used-ids for the packs in play.
+      // Unused questions ran out: reset the persisted used-ids for the packs
+      // in play so future games start fresh. This game's ids are re-recorded
+      // by markUsed below.
       for (const category of config.categories) {
         usedIds[packKey(category, challenge)] = [];
       }
+      softUsed.clear();
     }
     markUsed(selected);
     return selected;
@@ -488,6 +497,9 @@ export const useGameStore = create<GameState>((set, get) => {
         ...s,
         scores: [0, 0],
         roundIndex: 0,
+        // New game: the no-repeat guarantee restarts; previous games' ids stay
+        // in the persisted usedIds so fresh questions are still preferred.
+        sessionUsed: new Set<string>(),
         lastRecord: null,
       };
       const round = buildRound(base, s.config, 0);

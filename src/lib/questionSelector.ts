@@ -1,14 +1,16 @@
 /**
  * Pure, testable question-selection logic.
  *
- * Given a pool of candidate questions (already filtered by category +
- * challenge type), select `count` random questions that were not used before,
- * never repeating within a single selection. If there are not enough unused
- * questions, the pack is considered exhausted: we reset and draw a fresh random
- * set from the whole pool, signalling the caller to clear its persisted
- * used-id record for that pack.
+ * Two levels of exclusion:
+ *  - `hardExcluded`: ids that must NEVER be selected (questions already used in
+ *    the current game). Always respected.
+ *  - `usedIds` (soft): ids used in previous games (persisted per pack). Unused
+ *    questions are always preferred; when they run out the pack is considered
+ *    exhausted and the remainder is filled from previously-used questions —
+ *    the caller should then clear its persisted used-id record for that pack.
  *
- * RNG is injectable so selection is deterministic in unit tests.
+ * A single selection never contains duplicates. RNG is injectable so selection
+ * is deterministic in unit tests.
  */
 
 import type { Question } from '@/types';
@@ -17,7 +19,7 @@ export type Rng = () => number;
 
 export interface SelectionResult {
   selected: Question[];
-  /** True when the pool ran out of unused questions and was reset. */
+  /** True when unused questions ran out and previously-used ones were reused. */
   exhausted: boolean;
 }
 
@@ -38,20 +40,24 @@ export function selectQuestions(
   count: number,
   usedIds: ReadonlySet<string>,
   rng: Rng = Math.random,
+  hardExcluded: ReadonlySet<string> = new Set(),
 ): SelectionResult {
   const wanted = Math.max(0, Math.floor(count));
   if (wanted === 0 || pool.length === 0) {
     return { selected: [], exhausted: false };
   }
 
-  const available = pool.filter((q) => !usedIds.has(q.id));
+  // Candidates exclude hard-excluded ids unconditionally.
+  const candidates = pool.filter((q) => !hardExcluded.has(q.id));
+  const fresh = candidates.filter((q) => !usedIds.has(q.id));
 
-  if (available.length >= wanted) {
-    return { selected: shuffle(available, rng).slice(0, wanted), exhausted: false };
+  if (fresh.length >= wanted) {
+    return { selected: shuffle(fresh, rng).slice(0, wanted), exhausted: false };
   }
 
-  // Not enough unused questions: reset this pack and draw from the full pool.
-  // (If the whole pool is smaller than `wanted`, we return everything.)
-  const selected = shuffle(pool, rng).slice(0, Math.min(wanted, pool.length));
-  return { selected, exhausted: true };
+  // Exhausted: take every fresh question first, then fill the remainder from
+  // previously-used ones. Capped at the candidate count if the pool is tiny.
+  const reusable = candidates.filter((q) => usedIds.has(q.id));
+  const fill = shuffle(reusable, rng).slice(0, wanted - fresh.length);
+  return { selected: shuffle([...fresh, ...fill], rng), exhausted: true };
 }

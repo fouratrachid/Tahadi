@@ -10,9 +10,9 @@ const SOURCES = {
   correct: require('../../assets/sounds/correct.wav'),
   wrong: require('../../assets/sounds/wrong.wav'),
   tick: require('../../assets/sounds/tick.wav'),
-  timeUp: require('../../assets/sounds/timeup.wav'),
-  roundWin: require('../../assets/sounds/roundwin.wav'),
-  gameWin: require('../../assets/sounds/gamewin.wav'),
+  timeUp: require('../../assets/sounds/timeUp.wav'),
+  roundWin: require('../../assets/sounds/roundWin.wav'),
+  gameWin: require('../../assets/sounds/gameWin.wav'),
 } as const;
 
 export type SoundName = keyof typeof SOURCES;

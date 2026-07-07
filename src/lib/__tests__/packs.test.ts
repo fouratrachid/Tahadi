@@ -66,8 +66,10 @@ describe('question packs content', () => {
     for (const category of CATEGORIES) {
       for (const challenge of CHALLENGE_TYPES) {
         for (const q of getPack(category, challenge)) {
-          expect(q.text).not.toContain('...');
-          expect(q.text).not.toMatch(/بل[::]| بل /);
+          // "... بل" mid-sentence self-corrections are drafting artifacts;
+          // a trailing «...» fill-in-the-blank is legitimate.
+          expect(q.text).not.toMatch(/\.\.\.\s*بل|بل[::]| بل /);
+          expect(q.answer).not.toMatch(/\.\.\.|\(لا — /);
         }
       }
     }

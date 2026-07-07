@@ -46,8 +46,11 @@ export function useGameTimer({
   const firedRef = useRef(false);
   const onExpireRef = useRef(onExpire);
   const onTickRef = useRef(onTick);
-  onExpireRef.current = onExpire;
-  onTickRef.current = onTick;
+
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+    onTickRef.current = onTick;
+  }, [onExpire, onTick]);
 
   useEffect(() => {
     firedRef.current = false;

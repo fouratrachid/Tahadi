@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -22,13 +22,32 @@ const PALETTE = [
 
 const COUNT = 44;
 
+interface PieceConfig {
+  startX: number;
+  size: number;
+  color: string;
+  fallDuration: number;
+  spinDuration: number;
+  delay: number;
+  drift: number;
+}
+
+function randomPiece(screenW: number): PieceConfig {
+  return {
+    startX: Math.random() * screenW,
+    size: 6 + Math.random() * 8,
+    color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+    fallDuration: 2400 + Math.random() * 2200,
+    spinDuration: 1200 + Math.random() * 1200,
+    delay: Math.random() * 1500,
+    drift: (Math.random() - 0.5) * 80,
+  };
+}
+
 function Piece({ screenW, screenH }: { screenW: number; screenH: number }) {
-  const startX = Math.random() * screenW;
-  const size = 6 + Math.random() * 8;
-  const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
-  const fallDuration = 2400 + Math.random() * 2200;
-  const delay = Math.random() * 1500;
-  const drift = (Math.random() - 0.5) * 80;
+  const [{ startX, size, color, fallDuration, spinDuration, delay, drift }] = useState(() =>
+    randomPiece(screenW),
+  );
 
   const y = useSharedValue(-40);
   const rot = useSharedValue(0);
@@ -39,12 +58,11 @@ function Piece({ screenW, screenH }: { screenW: number; screenH: number }) {
       withRepeat(withTiming(screenH + 60, { duration: fallDuration, easing: Easing.linear }), -1, false),
     );
     rot.value = withRepeat(
-      withTiming(360, { duration: 1200 + Math.random() * 1200, easing: Easing.linear }),
+      withTiming(360, { duration: spinDuration, easing: Easing.linear }),
       -1,
       false,
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [y, rot, delay, screenH, fallDuration, spinDuration]);
 
   const style = useAnimatedStyle(() => ({
     transform: [{ translateY: y.value }, { rotate: `${rot.value}deg` }],
