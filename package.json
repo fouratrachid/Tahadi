@@ -4,25 +4,19 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo-google-fonts/cairo": "^0.4.2",
-    "@expo/ui": "~57.0.4",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.4",
     "expo-audio": "~57.0.0",
     "expo-constants": "~57.0.3",
-    "expo-device": "~57.0.0",
     "expo-font": "~57.0.0",
-    "expo-glass-effect": "~57.0.0",
     "expo-haptics": "~57.0.0",
-    "expo-image": "~57.0.0",
     "expo-keep-awake": "~57.0.0",
     "expo-linear-gradient": "~57.0.0",
     "expo-linking": "~57.0.2",
     "expo-router": "~57.0.4",
     "expo-splash-screen": "~57.0.2",
     "expo-status-bar": "~57.0.0",
-    "expo-symbols": "~57.0.0",
     "expo-system-ui": "~57.0.0",
-    "expo-web-browser": "~57.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
@@ -44,11 +38,20 @@
   },
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "generate-sounds": "node ./scripts/generate-sounds.js"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "roots": ["<rootDir>/src"],
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|native-base|react-native-svg|react-native-reanimated|react-native-worklets|zustand)"
+    ]
   },
   "private": true
 }
