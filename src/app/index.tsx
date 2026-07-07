@@ -1,98 +1,70 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { AppText } from '@/components/ui/AppText';
+import { Button } from '@/components/ui/Button';
+import { Screen } from '@/components/ui/Screen';
+import { Colors, FontSize, Spacing } from '@/constants/theme';
+import { AR } from '@/i18n/ar';
+import { useGameStore } from '@/store/gameStore';
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const reset = useGameStore((s) => s.reset);
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <Screen>
+      <View style={styles.container}>
+        <View style={styles.logo}>
+          <View style={styles.badge}>
+            <AppText weight="black" size={80} color={Colors.accent} center>
+              {AR.appName}
+            </AppText>
+          </View>
+          <AppText weight="bold" size={FontSize.lg} color={Colors.text} center>
+            {AR.tagline}
+          </AppText>
+          <AppText weight="medium" size={FontSize.sm} color={Colors.textSecondary} center>
+            {AR.home.subtitle}
+          </AppText>
+        </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+        <View style={styles.buttons}>
+          <Button
+            label={AR.home.newGame}
+            big
+            onPress={() => {
+              reset();
+              router.push('/setup');
+            }}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
+          <Button label={AR.home.packs} variant="secondary" onPress={() => router.push('/packs')} />
+          <Button
+            label={AR.home.history}
+            variant="secondary"
+            onPress={() => router.push('/history')}
           />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+          <Button
+            label={AR.home.settings}
+            variant="ghost"
+            onPress={() => router.push('/settings')}
+          />
+        </View>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+  container: { flex: 1, justifyContent: 'space-between', paddingVertical: Spacing.xxxl },
+  logo: { alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.xxxl },
+  badge: {
+    borderWidth: 3,
+    borderColor: Colors.accent,
+    borderRadius: 28,
+    paddingHorizontal: Spacing.xxl,
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.md,
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  buttons: { gap: Spacing.md, marginBottom: Spacing.xl },
 });
